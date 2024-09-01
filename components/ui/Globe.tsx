@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Color, Scene, Fog, PerspectiveCamera, Vector3, WebGLRenderer, MeshBasicMaterial, Mesh, SphereGeometry, Line, LineBasicMaterial, BufferGeometry, Float32BufferAttribute, Points, PointsMaterial, ArcCurve, LineSegments, Vector3 as ThreeVector3 } from "three";
-import { OrbitControls } from "./OrbitControls";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import countries from "@/data/globe.json";
 
 const RING_PROPAGATION_SPEED = 3;
