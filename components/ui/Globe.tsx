@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Color, Scene, Fog, PerspectiveCamera, Vector3, WebGLRenderer, MeshBasicMaterial, Mesh, SphereGeometry, Line, LineBasicMaterial, BufferGeometry, Float32BufferAttribute, Points, PointsMaterial, ArcCurve, LineSegments, Vector3 as ThreeVector3 } from "three";
+import { Color, Scene, Fog, PerspectiveCamera, Vector3, WebGLRenderer, MeshBasicMaterial, Mesh, SphereGeometry, Line, LineBasicMaterial, BufferGeometry, Float32BufferAttribute, Points, PointsMaterial, ArcCurve, LineSegments, Vector3 as ThreeVector3, AmbientLight, DirectionalLight, PointLight } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import countries from "@/data/globe.json";
 
@@ -201,25 +201,77 @@ export function Globe({ globeConfig, data }: WorldProps) {
 }
 
 export function World(props: WorldProps) {
-  const { globeConfig } = props;
+  const { globeConfig, data } = props;
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const scene = new Scene();
+      scene.fog = new Fog(0xffffff, 400, 2000);
+
+      const camera = new PerspectiveCamera(50, aspect, 180, 1800);
+      camera.position.z = cameraZ;
+
+      const renderer = new WebGLRenderer({ canvas });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+      renderer.setClearColor(0xffaaff, 0);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enablePan = false;
+      controls.enableZoom = false;
+      controls.minDistance = cameraZ;
+      controls.maxDistance = cameraZ;
+      controls.autoRotateSpeed = 1;
+      controls.autoRotate = true;
+      controls.minPolarAngle = Math.PI / 3.5;
+      controls.maxPolarAngle = Math.PI - Math.PI / 3;
+
+      const ambientLight = new AmbientLight(globeConfig.ambientLight || "#ffffff", 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight1 = new DirectionalLight(globeConfig.directionalLeftLight || "#ffffff", 0.8);
+      directionalLight1.position.set(-400, 100, 400);
+      scene.add(directionalLight1);
+
+      const directionalLight2 = new DirectionalLight(globeConfig.directionalTopLight || "#ffffff", 0.8);
+      directionalLight2.position.set(-200, 500, 200);
+      scene.add(directionalLight2);
+
+      const pointLight = new PointLight(globeConfig.pointLight || "#ffffff", 0.8);
+      pointLight.position.set(-200, 500, 200);
+      scene.add(pointLight);
+
+      const animate = () => {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        controls.update();
+      };
+
+      animate();
+
+      const onWindowResize = () => {
+        if (camera && renderer) {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+      };
+
+      window.addEventListener('resize', onWindowResize);
+
+      return () => {
+        window.removeEventListener('resize', onWindowResize);
+      };
+    }
+  }, [canvasRef.current, globeConfig, data]);
 
   return (
     <>
-      <ambientLight color={globeConfig.ambientLight} intensity={0.6} />
-      <directionalLight
-        color={globeConfig.directionalLeftLight}
-        position={new Vector3(-400, 100, 400)}
-      />
-      <directionalLight
-        color={globeConfig.directionalTopLight}
-        position={new Vector3(-200, 500, 200)}
-      />
-      <pointLight
-        color={globeConfig.pointLight}
-        position={new Vector3(-200, 500, 200)}
-        intensity={0.8}
-      />
-      <Globe {...props} />
+      <canvas ref={canvasRef} />
+      {/* Render the Globe component as a child here */}
+      <Globe globeConfig={globeConfig} data={data} />
     </>
   );
 }
